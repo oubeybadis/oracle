@@ -49,22 +49,66 @@ CREATE TABLE PERSONNEL (
 );
 
 -- select * from PERSONNE;
-DECLARE
-nomC PERSONNE.nom%type ;
-prenomC PERSONNE.prenom%type ;
-nbr integer;
+-- DECLARE
+-- nomC PERSONNE.nom%type;
+-- prenomC PERSONNE.prenom%type;
+-- nbr NUMBER;
 
+-- BEGIN
+--   -- INSERT INTO
+--   -- select count(*) into  nbr from PERSONNE;
+--   -- dbms_output.put_line(nbr);
+--   select nom ,prenom,count(*)  INTO nomC,prenomC,nbr 
+--   from PERSONNE
+--   group by nom,prenom 
+--   having count(*)>0
+--   ;
+  
+--   for i in 1..nbr Loop
+--     INSERT INTO CLIENT(nomcli,prenomcli) VALUES(nomC,prenomC);
+--   end Loop;
+--   -- commit;
+  
+-- EXCEPTION
+--   WHEN no_data_found  THEN
+--     dbms_output.put_line('no records found.');
+--   WHEN TOO_MANY_ROWS  THEN
+--     dbms_output.put_line('SBA TA3HA HNA');
+--   WHEN dup_val_on_index  THEN
+--     dbms_output.put_line('SBA TA3HA HNA tany' || SQLERRM);
+--   WHEN others THEN
+--     DBMS_OUTPUT.PUT_LINE('Error: ' || SQLERRM);
+-- END;
+-- /
+
+
+DECLARE
+nomC PERSONNE.nom%type;
+prenomC PERSONNE.prenom%type;
+nbr NUMBER;
 BEGIN
-  select nom ,prenom,count(*)as nbr  INTO nomC,prenomC,nbr from PERSONNE;
-  --INSERT INTO CLIENT VALUES(nomcli=nomC ,prenomcli=prenomC);
-  -- for i in nbr Loop
-  --   INSERT INTO CLIENT VALUES(nomcli=nomC ,prenomcli=prenomC);
-  -- end Loop;
+  -- INSERT INTO
+  -- select count(*) into  nbr from PERSONNE;
+  -- dbms_output.put_line(nbr);
+  select nom ,prenom,count(*)  INTO nomC,prenomC,nbr 
+  from PERSONNE
+  group by nom,prenom 
+  having count(*)>0
+  ;
+  
+  for i in 1..nbr Loop
+    INSERT INTO CLIENT(nomcli,prenomcli) VALUES(nomC,prenomC);
+  end Loop;
+  -- commit;
   
 EXCEPTION
   WHEN no_data_found  THEN
-    dbms_output.put_line('le numero nest existe pas');
+    dbms_output.put_line('no records found.');
+  WHEN TOO_MANY_ROWS  THEN
+    dbms_output.put_line('SBA TA3HA HNA');
+  WHEN dup_val_on_index  THEN
+    dbms_output.put_line('SBA TA3HA HNA tany' || SQLERRM);
   WHEN others THEN
-    dbms_output.put_line('eror');
+    DBMS_OUTPUT.PUT_LINE('Error: ' || SQLERRM);
 END;
 /
