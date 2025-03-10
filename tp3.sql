@@ -166,16 +166,13 @@ return number is
   mere2 personne.mere%type;
   pere2 personne.pere%type;
 begin
-  -- Vérifier qu'il s'agit de deux personnes différentes
   if num1 = num2 then
     return 0;
   end if;
   
-  -- Récupérer les parents de la première personne
   select mere, pere into mere1, pere1 
   from personne where numpers = num1;
   
-  -- Récupérer les parents de la deuxième personne
   select mere, pere into mere2, pere2 
   from personne where numpers = num2;
   
@@ -192,57 +189,147 @@ exception
 end freres;
 /
 
--- Procédure pour déterminer si deux personnes sont des cousins directs
--- et retourner leur parent commun
+
 create or replace procedure cousins_direct(
-  num1 IN personne.numpers%type, 
-  num2 IN personne.numpers%type,
-  parent_commun OUT personne.numpers%type
+  num1 in personne.numpers%type, 
+  num2 in personne.numpers%type,
+  parent_commun out personne.numpers%type
 ) is
   pere1 personne.pere%type;
   pere2 personne.pere%type;
+  mere1 personne.mere%type;
+  mere2 personne.mere%type;
   gpere1 personne.pere%type;
 begin
-  -- Initialisation du paramètre de sortie
+  -- initialisation du paramètre de sortie
   parent_commun := null;
   
-  -- Récupérer les pères des deux personnes
-  select pere into pere1 from PERSONNE where numpers = num1;
-  select pere into pere2 from PERSONNE where numpers = num2;
-  
-  -- Vérifier si les pères existent
-  if pere1 is null or pere2 is null then
+  -- vérifier que num1 et num2 sont différents
+  if num1 = num2 then
     return;
   end if;
-  
-  -- Vérifier si leurs pères sont frères
+
+  -- récupérer les pères et mères des deux personnes
+  begin
+    select pere, mere into pere1, mere1 from personne where numpers = num1;
+  exception
+    when no_data_found then
+      return;  
+  end;
+
+  begin
+    select pere, mere into pere2, mere2 from personne where numpers = num2;
+  exception
+    when no_data_found then
+      return; 
+  end;
+
+  -- vérifier si les pères ou mères existent
+  if pere1 is null or pere2 is null or mere1 is null or mere2 is null then
+    return;
+  end if;
+
+  -- vérifier si leurs pères ou mères sont frères
   if freres(pere1, pere2) = 1 then
-    -- Si les pères sont frères, trouver leur père commun (grand-père des cousins)
-    select pere into gpere1 from PERSONNE where numpers = pere1;
-    
-    -- Retourner le grand-père comme parent commun
+    select pere into gpere1 from personne where numpers = pere1;
+    parent_commun := gpere1;
+  elsif freres(pere1, mere2) = 1 then
+    select pere into gpere1 from personne where numpers = pere1;
+    parent_commun := gpere1;
+  elsif freres(mere1, mere2) = 1 then
+    select pere into gpere1 from personne where numpers = mere1;
+    parent_commun := gpere1;
+  elsif freres(mere1, pere2) = 1 then
+    select pere into gpere1 from personne where numpers = mere1;
     parent_commun := gpere1;
   else
-    -- Ils ne sont pas des cousins directs
-    -- parent_commun := null;
-    return ;
+    parent_commun := null;
   end if;
+
 exception
   when no_data_found then
     parent_commun := null;
+  when others then
+    parent_commun := null;  
 end cousins_direct;
 /
 
--- Test de la procédure
+-- test de la procédure
 declare  
   v_parent_commun personne.numpers%type;
 begin 
-  cousins_direct(6, 6, v_parent_commun);
+  cousins_direct(6, 7, v_parent_commun);
   
   if v_parent_commun is not null then
-    dbms_output.put_line('Numéro du parent commun: ' || v_parent_commun);
+    dbms_output.put_line('numéro du parent commun: ' || v_parent_commun);
   else 
-    dbms_output.put_line('Ils ne sont pas des cousins directs');
+    dbms_output.put_line('ils ne sont pas des cousins directs');
   end if;
+end;
+/
+
+
+
+
+
+
+
+
+
+
+
+--Q3
+declare
+  v_num_personne personne.numpers%type := 6; -- numéro de la personne donnée (à modifier selon le test)
+  
+  v_pere personne.pere%type;
+  v_mere personne.mere%type;
+  
+  v_oncle_tante personne.numpers%type;
+  v_cousin_num personne.numpers%type;
+  v_cousin_nom personne.nom%type;
+  v_cousin_prenom personne.prenom%type;
+  
+  -- curseur pour trouver les frères des parents (oncles/tantes)
+  cursor cur_oncles_tantes is
+    select numpers 
+    from personne 
+    where freres(numpers, v_pere) = 1 or freres(numpers, v_mere) = 1;
+
+  -- curseur pour trouver les cousins directs (enfants des oncles et tantes)
+  cursor cur_cousins (oncle_tante_id personne.numpers%type) is
+    select numpers, nom, prenom 
+    from personne 
+    where pere = oncle_tante_id or mere = oncle_tante_id;
+
+begin
+  begin
+    select pere, mere into v_pere, v_mere 
+    from personne 
+    where numpers = v_num_personne;
+  exception
+    when no_data_found then
+      dbms_output.put_line('personne introuvable.');
+      return;
+  end;
+
+  -- parcourir les oncles et tantes
+  for rec_oncle_tante in cur_oncles_tantes loop
+    v_oncle_tante := rec_oncle_tante.numpers;
+
+    -- trouver les cousins directs (enfants des oncles/tantes)
+    for rec_cousin in cur_cousins(v_oncle_tante) loop
+      v_cousin_num := rec_cousin.numpers;
+      v_cousin_nom := rec_cousin.nom;
+      v_cousin_prenom := rec_cousin.prenom;
+      
+      -- affichage du cousin direct
+      dbms_output.put_line('cousin direct trouvé : ' || v_cousin_num || ' - ' || v_cousin_nom || ' ' || v_cousin_prenom);
+    end loop;
+  end loop;
+
+exception
+  when others then
+    dbms_output.put_line('une erreur est survenue.');
 end;
 /

@@ -20,6 +20,9 @@ create type movie_type as (
 
 create table person (
     info personne_type;
+    isWorking boolean ;
 )
 
-insert into person VALUES(row('oubey','badis')::personne_type)
+insert into person VALUES(row('oubey','badis')::personne_type);
+
+select info.nom from personne where isWorking=true;
