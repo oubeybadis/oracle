@@ -90,6 +90,27 @@ alter table resultat add (
 
 
 -------------------------------------
+Create or REPLACE Trigger tr_q1
+Before UPDATE Of noteMin On PREREQUIS
+for each ROW
+BEGIN
+    -- RAISE_APPLICATION_ERROR(-20001, 'modification n est pas autorise');
+    DBMS_OUTPUT.PUT_LINE('modification n est pas autorise');
+
+
+    
+End;
+/
+
+
+-- Test contrainte 1: Empêcher la modification de note_min
+-- D'abord, insérer des données de test
+INSERT INTO MODULE VALUES (1, 'Module1', 30, 0);
+INSERT INTO MODULE VALUES (2, 'Module2', 30, 0);
+INSERT INTO PREREQUIS VALUES (1, 2, 10);
+
+-- Tentative de modification qui devrait échouer
+UPDATE PREREQUIS SET noteMin = 12 WHERE codMod = 1 AND codModPrereq = 2;
 
 
 -------------------------------------
@@ -126,6 +147,12 @@ BEGIN
 END;
 /
 
+INSERT INTO ETUDIANT VALUES (1, 'oubey', 'badis', TO_DATE('01-01-2000', 'DD-MM-YYYY'), NULL);
+INSERT INTO MODULE VALUES (1, 'Module1', 30, 0);
+
+INSERT INTO INSCRIPTION VALUES (1, 1, SYSDATE);
+-- Vérification
+SELECT effec FROM MODULE WHERE codMod = 1;
 
 ----------------------------------------
 
@@ -241,14 +268,16 @@ INSERT INTO PREREQUIS VALUES (1, 2, 10);
 UPDATE PREREQUIS SET note_min = 12 WHERE codMod = 1 AND codModPrereq = 2;
 
 -- Test contrainte 2: Mise à jour automatique de l'effectif
-INSERT INTO ETUDIANT VALUES (1, 'Dupont', 'Jean', TO_DATE('01-01-2000', 'DD-MM-YYYY'), NULL);
+INSERT INTO ETUDIANT VALUES (1, 'oubey', 'badis', TO_DATE('01-01-2000', 'DD-MM-YYYY'), NULL);
 INSERT INTO INSCRIPTION VALUES (1, 1, SYSDATE);
 -- Vérification
 SELECT effec FROM MODULE WHERE codMod = 1;
 
 -- Test contrainte 3: Vérification de l'effectif maximum
 -- Modifier l'effectif max à une valeur faible pour tester
+INSERT INTO MODULE VALUES (1, 'Module1', 30, 0);
 UPDATE MODULE SET effecMax = 1 WHERE codMod = 1;
+
 INSERT INTO ETUDIANT VALUES (2, 'Martin', 'Lucie', TO_DATE('02-02-2000', 'DD-MM-YYYY'), NULL);
 -- Cette insertion devrait échouer car l'effectif max est atteint
 INSERT INTO INSCRIPTION VALUES (2, 1, SYSDATE);
